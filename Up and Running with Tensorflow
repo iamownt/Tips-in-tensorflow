@@ -80,17 +80,93 @@ with tf.Session() as sess:
     saver.restore(sess, "/tmp/my_model_final.ckpt")  # this restores the graph's state
     best_theta_restored = theta.eval()
 
+# some problems occur when using tensorboard
+just change the demands to tensorboard --logdir=mylogs:'$...' or tensorboard --logdir=$
 
+from datetime import datetime
 
+now = datetime.utcnow().strftime("%Y%m%d%H%M%S")#year...
+root_logdir = "tf_logs"
+logdir = "{}/run-{}/".format(root_logdir, now)
+#add the following two lines at the very end of the construction phase
+mse_summary = tf.summary.scalar('MSE', mse)
+'''
+   create a node in the graph that will evaluate the MSE and write it 
+   to the tensorboard-compatible binary log called a summary
+'''
+file_writer = tf.summary.FileWriter(logdir, tf.get_default_graph())
+#create a FileWriter that you will use to write summaries to logfiles in the log directory
 
+#change the excution phase to:
+with tf.Session() as sess:                                                       
+    sess.run(init)                                                                
+    for epoch in range(n_epochs):                                                 
+        for batch_index in range(n_batches):
+            X_batch, y_batch = fetch_batch(epoch, batch_index, batch_size)
+            if batch_index % 10 == 0:#avoid slow training
+                summary_str = mse_summary.eval(feed_dict={X: X_batch, y: y_batch})
+                step = epoch * n_batches + batch_index
+                file_writer.add_summary(summary_str, step)
+            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
+    best_theta = theta.eval()   
+file_writer.flush()
+'''
+Flushes the event file to disk.
+Call this method to make sure that all pending events have been written to disk.
+'''
+file_writer.close()
 
+node.op.name
 
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+with tf.Session(config=config) as sess:        #session = tf.Session(config=config) 
+     ......
 
+# to creat a relu function     
+w_shape = (int(X.get_shape()[1]), 1)
+tf.add_n([list], name='output)
 
+!!!return tf.maximum(0, z, name='max')!!! if type(z) is tf.float32, 0 must be 0.0!!!
 
+#a function can have a hasattr like: relu.threshold or you can use del relu.threshold to delete it
+#relu is a function
+if not hasattr(relu, threshold):
+    relu.threshold = tf.Variable(0.0, name='threshold')
+''' 
+TensorFlow offers a solution which is a bit tricky to understand at first, but since it is used a lot in TensorFlowit is worth
+going into a bit of detail. The idea is to use the get_variable() function to create the shared variable if it does not exist yet,
+or reuse it if it already exists. The desired behavior (creating or reusing) is controlled by an attribute of the current
+variable_scope(). For example, the following code will create a variable named "relu/threshold" 
+(as a scalar, since shape=(), and using 0.0 as the initial value):
+'''
+reset_graph()
 
-
-
+with tf.variable_scope("relu"):
+    threshold = tf.get_variable("threshold", shape=(), initializer=tf.constant_initializer(0.0))
+# reuse
+with tf.variable_scope("relu", reuse=True):
+    threshold = tf.get_variable("threshold")
+# alternatively
+with tf.variable_scope("relu") as scope:
+    scope.reuse_variables()
+    threshold = tf.get_variable("threshold")
+    
+# the scope.reuse_variables() is important
+def relu(X):
+    with tf.variable_scope("relu"):
+        threshold = tf.get_variable("threshold", shape=(), initializer=tf.constant_initializer(0.0))
+        w_shape = (int(X.get_shape()[1]), 1)
+        w = tf.Variable(tf.random_normal(w_shape), name="weights")
+        b = tf.Variable(0.0, name="bias")
+        z = tf.add(tf.matmul(X, w), b, name="z")
+        return tf.maximum(z, threshold, name="max")
+X = tf.placeholder(tf.float32, shape=(None, n_features), name="X")
+with tf.variable_scope("", default_name="") as scope:
+    first_relu = relu(X)     # create the shared variable
+    scope.reuse_variables()  # then reuse it
+    relus = [first_relu] + [relu(X) for i in range(4)]
+output = tf.add_n(relus, name="output")
 
 
 
