@@ -57,7 +57,42 @@ with tf.Session() as sess:
 
     best_theta = theta.eval()
     
- 
+
+#save and restore models
+saver = tf.train.Saver()#at the end of construction phase
+...
+if epochs%5==0:
+    save_path = saver.save(sess,'/tmp/my_model.ckpt')
+...
+save_path = saver.save(sess, '/tmp/my_model.ckpt')# at the end of excution phase
+!!! if use'/tmp/my_model.ckpt' the model will save in C:/tmp!!!
+!!! if use'./tmp/my_model.ckpt' the model will save in $ ownt/tmp/!!!
+#can restore the parameters
+with tf.Session() as sess:
+    saver.restore(sess, "/save_model/my_model_final.ckpt")
+    best_theta_restored = theta.eval()
+
+#by default the saver save the graph structure in the '.meta' file
+reset_graph() # notice that we start with an empty graph.
+saver = tf.train.import_meta_graph("/tmp/my_model_final.ckpt.meta")  # this loads the graph structure
+theta = tf.get_default_graph().get_tensor_by_name("theta:0")
+with tf.Session() as sess:
+    saver.restore(sess, "/tmp/my_model_final.ckpt")  # this restores the graph's state
+    best_theta_restored = theta.eval()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
