@@ -1,0 +1,30 @@
+#auto set it the default session, but need sess.close()
+sess = tf.InteractiveSession()
+
+""'
+that the reason why I use regularization hyperparameters:
+l2_loss = np.sum(np.square(theta[1:]))
+gradients = 1/m*X_train.T.dot(error)+np.r_[np.zeros((1, n_outputs)), alpha*theta[1:]]
+"""
+from sklearn.linear_model import LinearRegression
+lin_reg = LinearRegression()
+lin_reg.fit(housing.data, housing.target.reshape(-1, 1))
+print(np.r_[lin_reg.intercept_.reshape(-1, 1), lin_reg.coef_.T])
+[[-3.69419202e+01]
+ [ 4.36693293e-01]
+ [ 9.43577803e-03]
+ [-1.07322041e-01]
+ [ 6.45065694e-01]
+ [-3.97638942e-06]
+ [-3.78654265e-03]
+ [-4.21314378e-01]
+ [-4.34513755e-01]]
+#less important
+scaler = StandardScaler()
+scaled_housing_data = scaler.fit_transform(housing.data)
+scaled_housing_data_plus_bias = np.c_[np.ones((m, 1)), scaled_housing_data]
+X = tf.constant(scaled_housing_data_plus_bias, dtype=tf.float32, name="X")
+y = tf.constant(housing.target.reshape(-1, 1), dtype=tf.float32, name="y")
+
+theta = tf.Variable(tf.random_uniform([n + 1, 1], -1.0, 1.0, seed=42), name="theta")# pay attention to (n+1) dimension
+
