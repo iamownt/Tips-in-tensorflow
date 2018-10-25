@@ -1,0 +1,14 @@
+#the perceptron learning rule: w(i, j) = w(i, j) + eta*(y-y(hat))*xi y(hat) is the prediction
+'''
+   step function: heavside(z): 0 (z<0), 1(z>=0), sgn(z)
+   LTU: a linear threshold unit    MLP: Multi-Layer Perceptron: one input layer | logistic function, 
+   hyperbolic tangent function: tanh(z)=2sigmoid(2*z)-1,(-1, 1)   relu function:
+   one or more layers of LTUs calle hidden layers(include output layer),
+   ANN has two or more layers of hidden layers called DNN
+   for each training instances the Backpropagation algotithm(BP) first make predictions(forward pass), measure the error, goes
+   through each layer in reverse to measure the error contribution from each connection(reverse pass), and finally slightly tweak
+   the connection weights to reduce the error(GD step)
+'''
+from sklearn.linear_model import Perceptron
+per_clf = Perceptron(random_state=42) # equal to sgd_clf = SGDClassifier(loss='perceptron', learning_rate='constant', eta0=1, penality=None)
+
