@@ -59,4 +59,66 @@ def selu(z,
    will self-normalize: the output of each layer will tend to preserve the same mean and variance during training,
    which solves the vanishing/exploding gradients problem
 '''
+!!! but the inputs must be standardized with mean  and standard deviation !!!
+X_train = (X_train - X_train.mean(axis=0, keepdims=True))/(X_train.std(axis=0, keepdims=True)+1e-10)
+X_test = (X_test - X_train.mean(axis=0, keepdims=True))/(X_train.std(axis=0, keepdims=True)+1e-10)
+
+# using batch_normalization!
+from fuctools import partial
+reset_graph()
+batch_norm_momentum = 0.9
+X = tf.placeholder(tf.float32, shape=(None, n_inputs), name="X")
+y = tf.placeholder(tf.int32, shape=(None), name="y")
+training = tf.placeholder_with_default(False, shape=(), name='training')
+with tf.name_scope("dnn"):
+    he_init = tf.variance_scaling_initializer()
+    my_batch_norm_layer = partial(
+            tf.layers.batch_normalization,
+            training=training,
+            momentum=batch_norm_momentum)
+    my_dense_layer = partial(
+            tf.layers.dense,
+            kernel_initializer=he_init)
+    hidden1 = my_dense_layer(X, n_hidden1, name="hidden1")
+    bn1 = tf.nn.elu(my_batch_norm_layer(hidden1))
+    hidden2 = my_dense_layer(bn1, n_hidden2, name="hidden2")
+    bn2 = tf.nn.elu(my_batch_norm_layer(hidden2))
+    logits_before_bn = my_dense_layer(bn2, n_outputs, name="outputs")
+    logits = my_batch_norm_layer(logits_before_bn)
+with tf.name_scope("loss"):
+    xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=logits)
+    loss = tf.reduce_mean(xentropy, name="loss")
+with tf.name_scope("train"):
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+    training_op = optimizer.minimize(loss)
+with tf.name_scope("eval"):
+    correct = tf.nn.in_top_k(logits, y, 1)
+    accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+init = tf.global_variables_initializer()
+saver = tf.train.Saver()
+n_epochs = 20
+batch_size = 200
+extra_update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)#pay attention to extra_update_ops and sess.run([..., extra_update_ops],.!!)
+with tf.Session() as sess:
+    init.run()
+    for epoch in range(n_epochs):
+        for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size):
+            sess.run([training_op, extra_update_ops],
+                     feed_dict={training: True, X: X_batch, y: y_batch})
+        accuracy_val = accuracy.eval(feed_dict={X: X_valid, y: y_valid})
+        print(epoch, "Validation accuracy:", accuracy_val)
+    save_path = saver.save(sess, "./my_model_final.ckpt")
+# to see the trainable_variable and global_varibale:
+[v.name for v in tf.trainable_variables()]
+[v.name for v in tf.global_variables()]
+# Gradient Clipping
+threshold = 1.0
+optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+grads_and_vars = optimizer.compute_gradients(loss)
+capped_gvs = [(tf.clip_by_value(grads, -threshold, threshold), vars) for grads, vars in grads_and_vars]
+training_op = optimizer.apply_gradients(capped_gvs)
+
+
+
+
 
