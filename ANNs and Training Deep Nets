@@ -39,11 +39,24 @@ y_pred[0]
 correct = tf.nn.in_top_k(logits, y, 1) # if the max k values' index equal to y, return True
 accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
-
-
-
-
-
-
-
+#Xavier initialization(tf.layers.dense default), but when using Relu, ELU, He initialization is recommend;
+he_init = tf.variance_scaling_initializer()
+hidden1 = tf.layers.dense(X, n_hidden1, activation=tf.nn.relu, kernel_initializer=he_init, name="hidden1")
+# define leaky_relu:
+def leaky_relu(z, name=None):
+    return tf.maximum(0.01 * z, z, name=name)
+# the tensorflow has defined yet
+def elu(z, alpha=1):
+    return np.where(z < 0, alpha * (np.exp(z) - 1), z)
+# in general elu > leaky_relu > relu > tanh > logistic
+# the selu activation function which can be used as td.nn.selu
+def selu(z,
+         scale=1.0507009873554804934193349852946,
+         alpha=1.6732632423543772848170429916717):
+    return scale * tf.where(z >= 0.0, z, alpha * tf.nn.elu(z))
+'''
+   During training, a neural network composed of a stack of dense layers using the SELU activation function
+   will self-normalize: the output of each layer will tend to preserve the same mean and variance during training,
+   which solves the vanishing/exploding gradients problem
+'''
 
