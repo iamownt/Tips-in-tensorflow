@@ -1,6 +1,9 @@
 #the perceptron learning rule: w(i, j) = w(i, j) + eta*(y-y(hat))*xi y(hat) is the prediction
 '''
-   step function: heavside(z): 0 (z<0), 1(z>=0), sgn(z)
+   step function: heavside(z): 0 (z<0), 1(z>=0),
+   def heaviside(z):
+       return (z >= 0).astype(z.dtype)
+   sgn(z)
    LTU: a linear threshold unit    MLP: Multi-Layer Perceptron: one input layer | logistic function, 
    hyperbolic tangent function: tanh(z)=2sigmoid(2*z)-1,(-1, 1)   relu function:
    one or more layers of LTUs calle hidden layers(include output layer),
@@ -11,4 +14,36 @@
 '''
 from sklearn.linear_model import Perceptron
 per_clf = Perceptron(random_state=42) # equal to sgd_clf = SGDClassifier(loss='perceptron', learning_rate='constant', eta0=1, penality=None)
+#using high level API
+(X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+X_train = X_train.astype(np.float32).reshape(-1, 28*28) / 255.0
+X_test = X_test.astype(np.float32).reshape(-1, 28*28) / 255.0 # scale
+y_train = y_train.astype(np.int32)# from np.uint8 to np.int32
+y_test = y_test.astype(np.int32)
+feature_cols = [tf.feature_column.numeric_column("X", shape=[28 * 28])]
+dnn_clf = tf.estimator.DNNClassifier(hidden_units=[300,100], n_classes=10,
+                                     feature_columns=feature_cols)
+input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"X": X_train}, y=y_train, num_epochs=40, batch_size=50, shuffle=True)
+dnn_clf.train(input_fn=input_fn)
+......
+test_input_fn = tf.estimator.inputs.numpy_input_fn(
+    x={"X": X_test}, y=y_test
+    , shuffle=False)
+eval_results = dnn_clf.evaluate(input_fn=test_input_fn)
+......
+y_pred_iter = dnn_clf.predict(input_fn=test_input_fn)
+y_pred = list(y_pred_iter)
+y_pred[0]
+...
+correct = tf.nn.in_top_k(logits, y, 1) # if the max k values' index equal to y, return True
+accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+
+
+
+
+
+
+
 
