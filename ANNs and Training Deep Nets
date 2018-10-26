@@ -120,6 +120,86 @@ training_op = optimizer.apply_gradients(capped_gvs)
 #Batch Normalization acts like  a regularizer reducing the need for other regularization techniques(dropout)
 #Batch Normalization find the optimal scale and offset for each layer
 
+#Reusing the pretrained layers
+1. reusing a graph structure using:
+   saver = tf.train.import_meta_graph('./my_final_model.ckpt.meta')
+   #Next, need to get a handle on all the operations for training. If don't know the graph's structure, list all the operations:
+   for op in tf.get_default_graph().get_operations():
+       print(op.name)
+   X = tf.get_default_graph().get_tensor_by_name("X:0")
+   y = tf.get_default_graph().get_tensor_by_name("y:0")
+   accuracy = tf.get_default_graph().get_tensor_by_name("eval/accuracy:0")
+   training_op = tf.get_default_graph().get_operation_by_name("GradientDescent")
+   #we could make things easier for people who will reuse your model by giving operations very clear names and documenting them
+   '''like:'''
+   for op in (X, y, accuracy, training_op):
+       tf.add_to_collection("my_important_ops", op)
+   X, y, accuracy, training_op = tf.get_collection("my_important_ops") 
+!!!we use 'saver = tf.train.import_meta_graph('./...')' to create the graph(operation), if we also want to evaluate something
+   such as accuracy, we must using X = tf.get_default_graph().get_tensor_by_name....... if using in execution phase and
+   with tf.Session() as sess:
+       saver.restore(sess, '......ckpt') just restore the parameters
+    if we have 'the construction phase code' we do not need to using like 'get_tensor_by_name'......
+!!!
+# using a new 4th layer and 3 pretrained layers:
+reset_graph()
+n_hidden4 = 20  # new layer
+n_outputs = 10  # new layer
+saver = tf.train.import_meta_graph("./my_model_final.ckpt.meta")
+X = tf.get_default_graph().get_tensor_by_name("X:0")
+y = tf.get_default_graph().get_tensor_by_name("y:0")
+hidden3 = tf.get_default_graph().get_tensor_by_name("dnn/hidden3/Relu:0")
+new_hidden4 = tf.layers.dense(hidden3, n_hidden4, activation=tf.nn.relu, name="new_hidden4")
+new_logits = tf.layers.dense(new_hidden4, n_outputs, name="new_outputs")
+with tf.name_scope("new_loss"):
+    xentropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y, logits=new_logits)
+    loss = tf.reduce_mean(xentropy, name="loss")
+with tf.name_scope("new_eval"):
+    correct = tf.nn.in_top_k(new_logits, y, 1)
+    accuracy = tf.reduce_mean(tf.cast(correct, tf.float32), name="accuracy")
+with tf.name_scope("new_train"):
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate)
+    training_op = optimizer.minimize(loss)
+init = tf.global_variables_initializer()
+new_saver = tf.train.Saver()
+with tf.Session() as sess:
+    init.run()
+    saver.restore(sess, "./my_model_final.ckpt")
+    for epoch in range(n_epochs):
+        for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size):
+            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
+        accuracy_val = accuracy.eval(feed_dict={X: X_valid, y: y_valid})
+        print(epoch, "Validation accuracy:", accuracy_val)
+    save_path = new_saver.save(sess, "./my_new_model_final.ckpt")
+
+#also if using the construction phase, must give the list of variables to restore!!
+reuse_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                               scope="hidden[123]") # regular expression
+restore_saver = tf.train.Saver(reuse_vars) # to restore layers 1-3
+init = tf.global_variables_initializer()
+saver = tf.train.Saver()
+with tf.Session() as sess:
+    init.run()
+    restore_saver.restore(sess, "./my_model_final.ckpt")
+
+    for epoch in range(n_epochs):                                            
+        for X_batch, y_batch in shuffle_batch(X_train, y_train, batch_size): 
+            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})        
+        accuracy_val = accuracy.eval(feed_dict={X: X_valid, y: y_valid})     
+        print(epoch, "Validation accuracy:", accuracy_val)                   
+
+    save_path = saver.save(sess, "./my_new_model_final.ckpt")
+
+
+
+
+
+
+
+
+
+
+
 
 
 
