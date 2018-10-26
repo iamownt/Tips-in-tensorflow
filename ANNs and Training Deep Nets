@@ -117,6 +117,13 @@ optimizer = tf.train.GradientDescentOptimizer(learning_rate)
 grads_and_vars = optimizer.compute_gradients(loss)
 capped_gvs = [(tf.clip_by_value(grads, -threshold, threshold), vars) for grads, vars in grads_and_vars]
 training_op = optimizer.apply_gradients(capped_gvs)
+#Batch Normalization acts like  a regularizer reducing the need for other regularization techniques(dropout)
+#Batch Normalization find the optimal scale and offset for each layer
+
+
+
+
+
 
 
 
