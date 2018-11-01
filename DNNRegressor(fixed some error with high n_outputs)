@@ -32,7 +32,10 @@ class DNNRegressor(BaseEstimator, RegressorMixin):
             tf.set_random_seed(self.random_state)
             np.random.seed(self.random_state)
         X = tf.placeholder(tf.float32, [None, n_inputs], name='X')
-        y = tf.placeholder(tf.float32, [None], name='y')
+        if n_outputs > 1:
+            y = tf.placeholder(tf.float32, [None, n_outputs], name='y')
+        else:
+            y = tf.placeholder(tf.float32, [None], name='y')  
         if self.batch_norm_momentum or self.dropout_rate:
             self._training = tf.placeholder_with_default(False, shape=(), name='training')
         else:
