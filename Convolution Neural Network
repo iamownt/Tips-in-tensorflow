@@ -1,0 +1,46 @@
+# note that filter's shape is [fh, fw, input_channel, output_channel], fh, fw is the height, width of the receptive field.
+# Here is the easy codes:
+reset_graph()
+from sklearn.datasets import load_sample_image
+china = load_sample_image('china.jpg')
+flower = load_sample_image('flower.jpg')
+datasets = np.array([china, flower], dtype=np.float32)
+batch_size, height, width, channels = datasets.shape
+
+filters = np.zeros(shape=(7, 7, channels, 2), dtype=np.float32)
+filters[3, :, :, 0] = 1
+filters[:, 3, :, 1] = 1
+
+X = tf.placeholder(tf.float32, [None, height, width, channels], name='X')
+convolution = tf.nn.conv2d(X, filters, strides=[1, 2, 2, 1], padding='SAME')
+with tf.Session() as sess:
+    output = convolution.eval(feed_dict={X:datasets})
+
+# tf.layers.conv2d(inputs, filters, kernel_size, strides=(1, 1), padding='valid',*arg)
+''' inputs: Tensor inputs; filters:interger i.e the number of filters in the convolution layer.
+    kernel_size:An integer or tuple/list of 2 integers(specifying the height and width of the 2D convolution window
+    strides: An integer or tupe/list of 2 integers
+'''
+# pool layer: tf.nn.max_pool(X, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+# tensorflow does not support pooling over instances or spatial dimensions| ksize like [batch_size, height, width, channels]..
+# tensorflow use easy way to evaluate mnist:
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("/tmp/data/")
+n_epochs = 10
+batch_size = 100
+with tf.Session() as sess:
+    init.run()
+    for epoch in range(n_epochs):
+        for iteration in range(mnist.train.num_examples // batch_size):
+            X_batch, y_batch = mnist.train.next_batch(batch_size)
+            sess.run(training_op, feed_dict={X: X_batch, y: y_batch})
+        acc_train = accuracy.eval(feed_dict={X: X_batch, y: y_batch})
+        acc_test = accuracy.eval(feed_dict={X: mnist.test.images, y: mnist.test.labels})
+        print(epoch, "Train accuracy:", acc_train, "Test accuracy:", acc_test)
+
+        save_path = saver.save(sess, "./my_mnist_model")
+
+
+
+
+
